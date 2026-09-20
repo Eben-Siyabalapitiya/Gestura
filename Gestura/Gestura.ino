@@ -2,7 +2,8 @@
 //
 // Hand 1 (gyro 0x68, "mouse hand"): turn hand = mouse, swing down = click
 // Hand 2 (gyro 0x69, "move hand"):  tilt = W/A/S/D, quick drop = jump
-// Touch 1 = hold for left click, Touch 2 = hold for right click,
+// Touch 1 = hold for left click (hold 3 s to talk to the AI instead),
+// Touch 2 = hold for right click,
 // hold Touch 1 + 2 together = talk to the AI (holds F13 while held), Touch 3 = next slot
 // Board buttons: A = zero both hands, B = hold F13 (voice push-to-talk),
 //                C = swap left/right click, D = pause
@@ -199,7 +200,8 @@ void updateLeds() {
     return;
   }
   if (zeroing)      leds[3] = CRGB::Yellow;
-  else if (touch[0] && touch[1]) leds[3] = comboFired ? CRGB::Green : CRGB::Cyan; // voice combo
+  else if (comboFired) leds[3] = CRGB::Green;                    // talking to the AI
+  else if (touch[0] || touch[1]) leds[3] = CRGB::Cyan;           // pad held
   else if (paused)  leds[3] = CRGB::Red;
   else if (S.clickRight) leds[3] = CRGB::Purple;
   else              leds[3] = CRGB::Black;
@@ -268,7 +270,8 @@ bool pttHeld = false;
 uint32_t voiceTapUntil = 0;             // F13 tap that starts voice
 uint32_t touchDownAt[3] = {0, 0, 0};
 bool comboFired = false, comboUsed = false;
-const uint32_t COMBO_MS = 700;          // hold both touches this long before voice starts
+const uint32_t COMBO_MS = 700;          // hold BOTH pads this long to talk
+const uint32_t VOICE_HOLD_MS = 3000;    // or hold the left pad alone this long
 const uint32_t TAP_MS = 600;            // shorter than this counts as a tap
 uint32_t jumpUntil = 0, lastJump = 0;
 uint32_t swingUntil = 0, lastSwing = 0, suppressMouseUntil = 0;
@@ -392,15 +395,19 @@ void controlStep(float dt) {
 
   // touch pads
   bool tRelease[3];
+  bool touchChanged = false;
   for (int i = 0; i < 3; i++) {
     bool was = touch[i];
     if (dTouch[i].update(readTouch(i), now)) touchDownAt[i] = now;
     touch[i] = dTouch[i].state;
     tRelease[i] = was && !touch[i];
+    if (was != touch[i]) touchChanged = true;
   }
+  if (touchChanged) Serial.printf("GG:T:%d%d%d\n", touch[0], touch[1], touch[2]);
 
-  // hold touch 1 + touch 2 together: after a short delay the glove holds F13
-  // down for as long as you keep holding, so the laptop records while you talk
+  // voice: hold the left-click pad on its own for VOICE_HOLD_MS, or hold both
+  // pads together briefly. Either way the glove holds F13 down while you talk.
+  if (touch[0] && !comboFired && now - touchDownAt[0] >= VOICE_HOLD_MS) comboFired = true;
   if (touch[0] && touch[1]) {
     comboUsed = true;
     uint32_t since = max(touchDownAt[0], touchDownAt[1]);
@@ -471,7 +478,7 @@ void controlStep(float dt) {
   uint8_t swingBit = S.clickRight ? 2 : 1;
   mouseBtns = 0;
   if (now < swingUntil) mouseBtns |= swingBit;
-  if (!(touch[0] && touch[1])) {
+  if (!comboFired && !(touch[0] && touch[1])) {   // no clicking while talking
     if (touch[0]) mouseBtns |= 1;   // left
     if (touch[1]) mouseBtns |= 2;   // right
   }

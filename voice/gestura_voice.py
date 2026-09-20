@@ -45,7 +45,15 @@ SILENCE_STOP = 1.2        # quiet for this long after you let go = done
 MIN_SECONDS = 0.6         # ignore accidental taps
 MAX_SECONDS = 10
 MODEL = "gemini-3.6-flash"
-F13 = keyboard.KeyCode.from_vk(0x7C)
+F13_VK = 0x7C             # Windows virtual key code for F13
+
+
+def is_f13(k):
+    """pynput reports F13 as Key.f13 on some setups and as a raw key code on
+    others, so accept either."""
+    if k == getattr(keyboard.Key, "f13", None):
+        return True
+    return getattr(k, "vk", None) == F13_VK
 
 # what Gemini is allowed to do
 ALLOWED_KEYS = ["w", "a", "s", "d", "space", "shift", "ctrl", "e", "q", "esc",
@@ -133,21 +141,59 @@ def beep(freq=880, ms=120):
         pass
 
 
+_ps = None
+
+
+def _speak_to_wav(text, path):
+    """Render speech to a wav with the Windows voice, so it plays through the
+    same output as the beep. One PowerShell stays running, otherwise every line
+    would pay a few seconds of startup."""
+    global _ps
+    import subprocess
+    if _ps is None or _ps.poll() is not None:
+        _ps = subprocess.Popen(["powershell", "-NoProfile", "-Command", "-"],
+                               stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                               stderr=subprocess.DEVNULL, text=True, bufsize=1)
+        _ps.stdin.write("Add-Type -AssemblyName System.Speech\n"
+                        "$v = New-Object System.Speech.Synthesis.SpeechSynthesizer\n"
+                        "$v.Rate = 1\n'ready'\n")
+        _ps.stdin.flush()
+        _ps.stdout.readline()
+
+    if not text:
+        return
+    safe = text.replace("'", "")
+    _ps.stdin.write(f"$v.SetOutputToWaveFile('{path}')\n$v.Speak('{safe}')\n"
+                    f"$v.SetOutputToNull()\n'spoken'\n")
+    _ps.stdin.flush()
+    _ps.stdout.readline()
+
+
+def warm_tts():
+    """Start the speech process up front so the first reply isn't slow."""
+    try:
+        _speak_to_wav("", "")
+    except Exception:
+        pass
+
+
 def say(text, wait=True):
     """Speak a line out loud. Skips silently if speech isn't available."""
     if not text:
         return
 
     def run():
-        global _tts
+        import tempfile
+        import wave
+        path = os.path.join(tempfile.gettempdir(), "gestura_say.wav")
         try:
             with _tts_lock:
-                if _tts is None:
-                    import pyttsx3
-                    _tts = pyttsx3.init()
-                    _tts.setProperty("rate", 190)
-                _tts.say(text)
-                _tts.runAndWait()
+                _speak_to_wav(text, path)
+                with wave.open(path, "rb") as w:
+                    rate = w.getframerate()
+                    pcm = np.frombuffer(w.readframes(w.getnframes()), dtype=np.int16)
+                sd.play(pcm.astype(np.float32) / 32768.0, rate)
+                sd.wait()
         except Exception as e:
             print(f"  (voice output off: {e})")
 
@@ -335,15 +381,21 @@ def main():
         time.sleep(8)
         return
 
+    debug = "--debug" in sys.argv
+
     def on_press(k):
-        if k == F13:
+        if debug:
+            print("key:", k, "vk:", getattr(k, "vk", None))
+        if is_f13(k):
             if not busy.is_set():
-                print("F13 down (pads held)")
+                print("F13 down (pad held)")
             start_session()
 
     def on_release(k):
-        if k == F13:
+        if is_f13(k):
             talking.clear()      # you let go: wrap up the recording
+
+    threading.Thread(target=warm_tts, daemon=True).start()
 
     print("Gestura voice ready.")
     print("Hold both touch pads (or board button B), speak, then let go.")
