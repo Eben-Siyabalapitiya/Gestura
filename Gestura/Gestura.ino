@@ -3,7 +3,7 @@
 // Hand 1 (gyro 0x68, "mouse hand"): turn hand = mouse, swing down = click
 // Hand 2 (gyro 0x69, "move hand"):  tilt = W/A/S/D, quick drop = jump
 // Touch 1 = hold for left click, Touch 2 = hold for right click,
-// hold Touch 1 + 2 together for 3 s = start voice (taps F13), Touch 3 = next hotbar slot
+// hold Touch 1 + 2 together = talk to the AI (holds F13 while held), Touch 3 = next slot
 // Board buttons: A = zero both hands, B = hold F13 (voice push-to-talk),
 //                C = swap left/right click, D = pause
 //
@@ -43,14 +43,14 @@ const uint8_t KEY_W = 0x1A, KEY_A = 0x04, KEY_S = 0x16, KEY_D = 0x07;
 const uint8_t KEY_SPACE = 0x2C, KEY_F13 = 0x68;
 
 // ---------- settings (saved to flash) ----------
-const uint16_t SET_VER = 11;
+const uint16_t SET_VER = 12;
 Settings S;
 
 void setDefaults() {
   // axX=Y turn, axY=Z look up&down (on by default), swing on Z
-  S = {SET_VER, 1.6f, 8.0f, 1, 2, true, true, true, 2, false, 250.0f, false,
+  S = {SET_VER, 1.5f, 10.0f, 1, 2, true, true, true, 2, false, 250.0f, false,
        18.0f, false, false, false, true, 0.45f, 0,
-       0.6f, false, 22.0f, true, true, 8.0f, true, true};
+       0.6f, false, 22.0f, true, true, 8.0f, true, false};
 }
 
 // ---------- cloud settings (WiFi + HiveMQ), kept out of the code ----------
@@ -164,6 +164,14 @@ float absAngle(const Imu& m, uint8_t a) {
   return a == 0 ? (m.roll - m.r0) : (a == 1 ? (m.pitch - m.p0) : m.yaw);
 }
 
+// Turn rate -> mouse speed. Below the deadzone nothing happens; past it the
+// response ramps up, so small turns are precise and big turns are quick.
+float curve(float rate, float dead) {
+  float a = fabsf(rate) - dead;
+  if (a <= 0) return 0;
+  return copysignf(powf(a, 1.25f), rate);
+}
+
 // ---------- LEDs ----------
 CRGB leds[NUM_LEDS];
 bool zeroing = false, paused = false;
@@ -260,7 +268,7 @@ bool pttHeld = false;
 uint32_t voiceTapUntil = 0;             // F13 tap that starts voice
 uint32_t touchDownAt[3] = {0, 0, 0};
 bool comboFired = false, comboUsed = false;
-const uint32_t COMBO_MS = 3000;         // hold both touches this long to start voice
+const uint32_t COMBO_MS = 700;          // hold both touches this long before voice starts
 const uint32_t TAP_MS = 600;            // shorter than this counts as a tap
 uint32_t jumpUntil = 0, lastJump = 0;
 uint32_t swingUntil = 0, lastSwing = 0, suppressMouseUntil = 0;
@@ -391,19 +399,18 @@ void controlStep(float dt) {
     tRelease[i] = was && !touch[i];
   }
 
-  // hold touch 1 + touch 2 together for 3 s -> start voice (tap F13)
+  // hold touch 1 + touch 2 together: after a short delay the glove holds F13
+  // down for as long as you keep holding, so the laptop records while you talk
   if (touch[0] && touch[1]) {
     comboUsed = true;
     uint32_t since = max(touchDownAt[0], touchDownAt[1]);
-    if (!comboFired && now - since >= COMBO_MS) {
-      comboFired = true;
-      voiceTapUntil = now + 120;
-    }
+    if (!comboFired && now - since >= COMBO_MS) comboFired = true;
   }
   bool wasCombo = comboUsed;
   if (!touch[0] && !touch[1]) comboFired = comboUsed = false;
 
-  pttHeld = dBtn[1].state;  // board button B = hold to talk (backup)
+  // board button B is the backup hold-to-talk
+  pttHeld = comboFired || dBtn[1].state;
 
   if (paused || zeroing) { sendKeyboard(); return; }
 
@@ -448,12 +455,14 @@ void controlStep(float dt) {
         if (S.lookY && fabsf(ey) > 1.0f) { accY += ey; sentY = ty; }
       }
     } else {
-      // relative aim: how fast you rotate = how fast the mouse moves
+      // relative aim: how fast you turn your hand = how fast the view turns.
+      // Smoothed, deadzoned, and gated on "actually moving" so a resting hand
+      // can never creep the camera.
       rxS = rxS * S.smooth + rx * (1 - S.smooth);
       ryS = ryS * S.smooth + ry * (1 - S.smooth);
-      if (now >= suppressMouseUntil) {
-        if (fabsf(rxS) > S.dead) accX += (rxS - copysignf(S.dead, rxS)) * S.sens * 6.0f * dt;
-        if (S.lookY && fabsf(ryS) > S.dead) accY += (ryS - copysignf(S.dead, ryS)) * S.sens * 6.0f * dt;
+      if (now >= suppressMouseUntil && !still) {
+        accX += curve(rxS, S.dead) * S.sens * dt;
+        if (S.lookY) accY += curve(ryS, S.dead) * S.sens * dt;
       }
     }
   }
