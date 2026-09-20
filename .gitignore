@@ -1,0 +1,11 @@
+# build output
+build/
+*.bin
+*.elf
+# python
+__pycache__/
+*.pyc
+.venv/
+# secrets - never commit API keys or broker passwords
+.env
+secrets.h
