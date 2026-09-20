@@ -341,8 +341,10 @@ setInterval(()=>{
 }, 800);
 
 try{
-  const saved = JSON.parse(localStorage.getItem('gestura')||'{}');
+  // 'gg' is where older versions saved it
+  const saved = JSON.parse(localStorage.getItem('gestura') || localStorage.getItem('gg') || '{}');
   ['host','port','user','pass','topic'].forEach(k=>{ if(saved[k]) $('c_'+k).value = saved[k] });
+  if(saved.topic === 'gameglove') $('c_topic').value = 'gestura';
   if(saved.host && saved.user) connect();
 }catch(e){}
 </script>
