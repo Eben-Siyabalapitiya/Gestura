@@ -1,5 +1,7 @@
 # Gestura — Hack the North 2026
 
+**Live dashboard:** https://eben-siyabalapitiya.github.io/Gestura/
+
 Motion control gloves for gaming. One hand is the mouse, the other hand is the keyboard, so you can play any game (like Minecraft) with whatever you're holding, even a water bottle as a sword.
 
 ## What it does
