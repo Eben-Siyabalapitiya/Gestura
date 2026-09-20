@@ -43,11 +43,12 @@ const uint8_t KEY_W = 0x1A, KEY_A = 0x04, KEY_S = 0x16, KEY_D = 0x07;
 const uint8_t KEY_SPACE = 0x2C, KEY_F13 = 0x68;
 
 // ---------- settings (saved to flash) ----------
-const uint16_t SET_VER = 6;
+const uint16_t SET_VER = 7;
 Settings S;
 
 void setDefaults() {
-  S = {SET_VER, 1.0f, 8.0f, 2, 1, false, false, false, 1, false, 250.0f, false,
+  // axX=Y turn, axY=Z look up&down (on by default), swing on Z
+  S = {SET_VER, 1.0f, 8.0f, 1, 2, false, false, true, 2, false, 250.0f, false,
        18.0f, false, false, false, true, 0.45f, 0,
        0.6f, false, 22.0f, true, true, 8.0f, true};
 }

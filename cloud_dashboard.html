@@ -134,6 +134,7 @@ input[type=text],input[type=password]{background:#11141a;color:var(--text);borde
     <button onclick="cmd('save','Saved to glove')">Save settings</button>
     <button class="sec" onclick="cmd('defaults','Defaults loaded')">Reset to defaults</button>
     <button class="sec" onclick="cmd('hurt')">Test damage flash</button>
+    <button class="sec" onclick="editConn()">Connection settings</button>
   </div>
 </div>
 
@@ -195,6 +196,7 @@ function pill(id,cls,text){const e=$(id);e.className='pill '+cls;e.textContent=t
 function bar(el,v){const w=Math.min(Math.abs(v)/500,1)*50;el.style.width=w+'%';el.style.left=(v<0?50-w:50)+'%'}
 function on(id,v){$(id).classList.toggle('on',!!v)}
 
+function editConn(){ if(client){try{client.end(true)}catch(e){}} client=null; $('app').classList.add('hidden'); $('login').classList.remove('hidden'); pill('pCloud','','Not connected') }
 function cmd(c,t){ if(client) client.publish(topic+'/cmd', c); toast(t || (c+' sent')) }
 function send(k,v){ if(client) client.publish(topic+'/set', k+'='+v) }
 
