@@ -109,7 +109,10 @@ def do_action(a):
 
     for k in a.get("tap") or []:
         if k in ALLOWED_KEYS:
-            pydirectinput.press(k)
+            # a real press-and-hold: games often miss an instant tap
+            pydirectinput.keyDown(k)
+            time.sleep(0.08)
+            pydirectinput.keyUp(k)
 
     for k in a.get("hold") or []:
         if k in ALLOWED_KEYS and k not in held_keys:
