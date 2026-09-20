@@ -43,14 +43,14 @@ const uint8_t KEY_W = 0x1A, KEY_A = 0x04, KEY_S = 0x16, KEY_D = 0x07;
 const uint8_t KEY_SPACE = 0x2C, KEY_F13 = 0x68;
 
 // ---------- settings (saved to flash) ----------
-const uint16_t SET_VER = 7;
+const uint16_t SET_VER = 11;
 Settings S;
 
 void setDefaults() {
   // axX=Y turn, axY=Z look up&down (on by default), swing on Z
-  S = {SET_VER, 1.0f, 8.0f, 1, 2, false, false, true, 2, false, 250.0f, false,
+  S = {SET_VER, 1.6f, 8.0f, 1, 2, true, true, true, 2, false, 250.0f, false,
        18.0f, false, false, false, true, 0.45f, 0,
-       0.6f, false, 22.0f, true, true, 8.0f, true};
+       0.6f, false, 22.0f, true, true, 8.0f, true, true};
 }
 
 // ---------- cloud settings (WiFi + HiveMQ), kept out of the code ----------
@@ -159,6 +159,11 @@ float relRoll(const Imu& m)  { return m.roll - m.r0; }
 
 float gyroAxis(const Imu& m, uint8_t a) { return a == 0 ? m.gx : (a == 1 ? m.gy : m.gz); }
 
+// angle since the last zero, for absolute aiming
+float absAngle(const Imu& m, uint8_t a) {
+  return a == 0 ? (m.roll - m.r0) : (a == 1 ? (m.pitch - m.p0) : m.yaw);
+}
+
 // ---------- LEDs ----------
 CRGB leds[NUM_LEDS];
 bool zeroing = false, paused = false;
@@ -260,6 +265,7 @@ const uint32_t TAP_MS = 600;            // shorter than this counts as a tap
 uint32_t jumpUntil = 0, lastJump = 0;
 uint32_t swingUntil = 0, lastSwing = 0, suppressMouseUntil = 0;
 float accX = 0, accY = 0;
+float sentX = 0, sentY = 0;   // how much absolute aim has already been sent
 float rxS = 0, ryS = 0;   // smoothed mouse hand rates
 float fbS = 0, lrS = 0;   // smoothed move hand tilt
 int8_t wheelPending = 0;
@@ -339,6 +345,7 @@ void zeroHands(uint8_t mask) {
     m.yaw = 0;
   }
   fbS = lrS = rxS = ryS = 0;
+  sentX = sentY = 0;
   zeroing = false;
 }
 
@@ -416,12 +423,39 @@ void controlStep(float dt) {
       swingUntil = now + 60;
       suppressMouseUntil = now + 200; // don't let the swing jerk the camera
     }
-    // smooth out hand shake before the deadzone
-    rxS = rxS * S.smooth + rx * (1 - S.smooth);
-    ryS = ryS * S.smooth + ry * (1 - S.smooth);
-    if (now >= suppressMouseUntil) {
-      if (fabsf(rxS) > S.dead) accX += (rxS - copysignf(S.dead, rxS)) * S.sens * 6.0f * dt;
-      if (S.lookY && fabsf(ryS) > S.dead) accY += (ryS - copysignf(S.dead, ryS)) * S.sens * 6.0f * dt;
+    // while the hand is held still, re-learn the gyro bias. this is what
+    // kills the slow left/right creep.
+    float spin = fabsf(imu[0].gx) + fabsf(imu[0].gy) + fabsf(imu[0].gz);
+    bool still = spin < 8.0f;
+    if (still) {
+      imu[0].bx += imu[0].gx * 0.05f;
+      imu[0].by += imu[0].gy * 0.05f;
+      imu[0].bz += imu[0].gz * 0.05f;
+    }
+
+    if (S.absMouse) {
+      // absolute aim: hand angle = camera angle, so putting your hand back
+      // at the zero position puts the view back where it started
+      float tx = absAngle(imu[0], S.axX) * (S.invX ? -1 : 1) * S.sens * 12.0f;
+      float ty = absAngle(imu[0], S.axY) * (S.invY ? -1 : 1) * S.sens * 12.0f;
+      if (still || now < suppressMouseUntil) {
+        // hand isn't really moving (or is mid-swing): absorb it so leftover
+        // drift never reaches the screen
+        sentX = tx;
+        sentY = ty;
+      } else {
+        float ex = tx - sentX, ey = ty - sentY;
+        if (fabsf(ex) > 1.0f) { accX += ex; sentX = tx; }   // ignore tiny creep
+        if (S.lookY && fabsf(ey) > 1.0f) { accY += ey; sentY = ty; }
+      }
+    } else {
+      // relative aim: how fast you rotate = how fast the mouse moves
+      rxS = rxS * S.smooth + rx * (1 - S.smooth);
+      ryS = ryS * S.smooth + ry * (1 - S.smooth);
+      if (now >= suppressMouseUntil) {
+        if (fabsf(rxS) > S.dead) accX += (rxS - copysignf(S.dead, rxS)) * S.sens * 6.0f * dt;
+        if (S.lookY && fabsf(ryS) > S.dead) accY += (ryS - copysignf(S.dead, ryS)) * S.sens * 6.0f * dt;
+      }
     }
   }
   uint8_t swingBit = S.clickRight ? 2 : 1;
@@ -507,7 +541,7 @@ String settingsJson() {
            "\"smooth\":%.2f,\"diag\":%d,\"sideTilt\":%.0f}",
            S.sens, S.dead, S.axX, S.axY, S.invX, S.invY, S.lookY, S.swAx, S.swInv, S.swTh,
            S.clickRight, S.tilt, S.swapTilt, S.invFB, S.invLR, S.jumpOn, S.jumpTh, S.touchMode,
-           S.smooth, S.diag, S.sideTilt, S.outBle, S.outUsb, S.release, S.autoZero);
+           S.smooth, S.diag, S.sideTilt, S.outBle, S.outUsb, S.release, S.autoZero, S.absMouse);
   return b;
 }
 
@@ -555,6 +589,7 @@ void setKey(const String& k, const String& v) {
   else if (k == "outUsb") S.outUsb = i;
   else if (k == "release") S.release = f;
   else if (k == "autoZero") S.autoZero = i;
+  else if (k == "absMouse") S.absMouse = i;
 }
 
 void runCommand(const String& c) {

@@ -140,6 +140,7 @@ input[type=text],input[type=password]{background:#11141a;color:var(--text);borde
   <div class="chk">
     <label><input type="checkbox" id="invX"> Flip turn</label>
     <label><input type="checkbox" id="lookY"> Allow look up/down</label>
+    <label><input type="checkbox" id="absMouse"> Absolute aim (hand angle = view angle)</label>
     <label><input type="checkbox" id="invY"> Flip up/down</label>
     <label><input type="checkbox" id="swInv"> Flip swing</label>
     <label><input type="checkbox" id="clickRight"> Swing = right click</label>
@@ -193,7 +194,7 @@ input[type=text],input[type=password]{background:#11141a;color:var(--text);borde
 const $ = id => document.getElementById(id);
 const ranges = ['sens','dead','swTh','tilt','jumpTh','smooth','sideTilt','release'];
 const selects = ['axX','axY','swAx','touchMode'];
-const checks = ['invX','lookY','invY','swInv','clickRight','jumpOn','swapTilt','invFB','invLR','diag','outBle','outUsb','autoZero'];
+const checks = ['invX','lookY','invY','swInv','clickRight','jumpOn','swapTilt','invFB','invLR','diag','outBle','outUsb','autoZero','absMouse'];
 
 function toast(t){const m=$('msg');m.textContent=t;m.style.opacity=1;setTimeout(()=>m.style.opacity=0,1400)}
 function act(path,t){return fetch('/'+path).then(()=>{if(t)toast(t)})}

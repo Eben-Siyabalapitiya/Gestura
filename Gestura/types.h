@@ -26,6 +26,7 @@ struct Settings {
   bool outUsb;      // send input over USB to the laptop bridge
   float release;    // how far below the tilt angle keys let go, deg
   bool autoZero;    // slowly re-centre the move hand while it is still
+  bool absMouse;    // hand angle = camera angle (instead of speed-based)
 };
 
 // ---------- one gyro ----------
