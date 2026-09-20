@@ -44,14 +44,14 @@ const uint8_t KEY_W = 0x1A, KEY_A = 0x04, KEY_S = 0x16, KEY_D = 0x07;
 const uint8_t KEY_SPACE = 0x2C, KEY_F13 = 0x68;
 
 // ---------- settings (saved to flash) ----------
-const uint16_t SET_VER = 12;
+const uint16_t SET_VER = 13;
 Settings S;
 
 void setDefaults() {
   // axX=Y turn, axY=Z look up&down (on by default), swing on Z
   S = {SET_VER, 1.5f, 10.0f, 1, 2, true, true, true, 2, false, 250.0f, false,
        18.0f, false, false, false, true, 0.45f, 0,
-       0.6f, false, 22.0f, true, true, 8.0f, true, false};
+       0.6f, false, 22.0f, true, true, 8.0f, true, false, 1.7f};
 }
 
 // ---------- cloud settings (WiFi + HiveMQ), kept out of the code ----------
@@ -165,12 +165,21 @@ float absAngle(const Imu& m, uint8_t a) {
   return a == 0 ? (m.roll - m.r0) : (a == 1 ? (m.pitch - m.p0) : m.yaw);
 }
 
-// Turn rate -> mouse speed. Below the deadzone nothing happens; past it the
-// response ramps up, so small turns are precise and big turns are quick.
-float curve(float rate, float dead) {
+// Turn rate -> mouse speed.
+//
+// Below the deadzone nothing happens at all. Past it the response is curved,
+// which is what lets you turn further than your wrist can reach: flick quickly
+// and the view swings a long way, bring your hand back slowly and the view
+// barely follows, so you can re-centre your hand for free. Same trick as
+// lifting a mouse off the pad.
+//
+// REF is the rate where the curve crosses linear, so changing its shape
+// doesn't change how an ordinary turn feels.
+float curve(float rate, float dead, float accel) {
+  const float REF = 60.0f;
   float a = fabsf(rate) - dead;
   if (a <= 0) return 0;
-  return copysignf(powf(a, 1.25f), rate);
+  return copysignf(powf(a / REF, accel) * REF * 4.0f, rate);
 }
 
 // ---------- LEDs ----------
@@ -468,8 +477,8 @@ void controlStep(float dt) {
       rxS = rxS * S.smooth + rx * (1 - S.smooth);
       ryS = ryS * S.smooth + ry * (1 - S.smooth);
       if (now >= suppressMouseUntil && !still) {
-        accX += curve(rxS, S.dead) * S.sens * dt;
-        if (S.lookY) accY += curve(ryS, S.dead) * S.sens * dt;
+        accX += curve(rxS, S.dead, S.accel) * S.sens * dt;
+        if (S.lookY) accY += curve(ryS, S.dead, S.accel) * S.sens * dt;
       }
     }
   }
@@ -561,7 +570,7 @@ String settingsJson() {
            "\"smooth\":%.2f,\"diag\":%d,\"sideTilt\":%.0f}",
            S.sens, S.dead, S.axX, S.axY, S.invX, S.invY, S.lookY, S.swAx, S.swInv, S.swTh,
            S.clickRight, S.tilt, S.swapTilt, S.invFB, S.invLR, S.jumpOn, S.jumpTh, S.touchMode,
-           S.smooth, S.diag, S.sideTilt, S.outBle, S.outUsb, S.release, S.autoZero, S.absMouse);
+           S.smooth, S.diag, S.sideTilt, S.outBle, S.outUsb, S.release, S.autoZero, S.absMouse, S.accel);
   return b;
 }
 
@@ -610,6 +619,7 @@ void setKey(const String& k, const String& v) {
   else if (k == "release") S.release = f;
   else if (k == "autoZero") S.autoZero = i;
   else if (k == "absMouse") S.absMouse = i;
+  else if (k == "accel") S.accel = constrain(f, 1.0f, 2.5f);
 }
 
 void runCommand(const String& c) {

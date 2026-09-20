@@ -142,6 +142,7 @@ input[type=text],input[type=password]{background:#11141a;color:var(--text);borde
   <h2>Mouse hand</h2>
   <div class="set"><label>Mouse speed</label><input type="range" id="sens" min="0.2" max="5" step="0.1"><output id="o_sens"></output></div>
   <div class="set"><label>Deadzone (deg/s)</label><input type="range" id="dead" min="0" max="40" step="0.5"><output id="o_dead"></output></div>
+  <div class="set"><label>Flick boost</label><input type="range" id="accel" min="1" max="2.5" step="0.1"><output id="o_accel"></output></div>
   <div class="set"><label>Swing click strength</label><input type="range" id="swTh" min="100" max="600" step="10"><output id="o_swTh"></output></div>
   <div class="chk">
     <span>Turn axis <select id="axX"><option value="0">X</option><option value="1">Y</option><option value="2">Z</option></select></span>
@@ -187,7 +188,7 @@ input[type=text],input[type=password]{background:#11141a;color:var(--text);borde
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/5.3.4/mqtt.min.js"></script>
 <script>
 const $ = id => document.getElementById(id);
-const ranges = ['sens','dead','swTh','tilt','jumpTh','smooth','sideTilt','release'];
+const ranges = ['sens','dead','swTh','tilt','jumpTh','smooth','sideTilt','release','accel'];
 const selects = ['axX','axY','swAx','touchMode'];
 const checks = ['invX','lookY','invY','swInv','clickRight','jumpOn','swapTilt','invFB','invLR','diag','outBle','outUsb','autoZero','absMouse'];
 let client = null, topic = 'gestura', lastSeen = 0, gotSettings = false;

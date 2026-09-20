@@ -131,6 +131,7 @@ input[type=text],input[type=password]{background:#11141a;color:var(--text);borde
   <h2>Mouse hand</h2>
   <div class="set"><label>Mouse speed</label><input type="range" id="sens" min="0.2" max="5" step="0.1"><output id="o_sens"></output></div>
   <div class="set"><label>Deadzone (deg/s)</label><input type="range" id="dead" min="0" max="40" step="0.5"><output id="o_dead"></output></div>
+  <div class="set"><label>Flick boost</label><input type="range" id="accel" min="1" max="2.5" step="0.1"><output id="o_accel"></output></div>
   <div class="set"><label>Swing click strength</label><input type="range" id="swTh" min="100" max="600" step="10"><output id="o_swTh"></output></div>
   <div class="chk">
     <span>Turn axis <select id="axX"><option value="0">X</option><option value="1">Y</option><option value="2">Z</option></select></span>
@@ -147,7 +148,7 @@ input[type=text],input[type=password]{background:#11141a;color:var(--text);borde
     <label><input type="checkbox" id="outBle"> Send over Bluetooth</label>
     <label><input type="checkbox" id="outUsb"> Send over USB cable</label>
   </div>
-  <div class="hint">Swing your hand and watch the X/Y/Z bars: the one that jumps the most is your swing axis. Turn your hand the same way to find the turn axis.</div>
+  <div class="hint">Flick boost: 1 turns exactly with your hand, higher lets you flick fast to turn far and move back slowly to re-centre your hand without turning. Swing your hand and watch the X/Y/Z bars: the one that jumps the most is your swing axis. Turn your hand the same way to find the turn axis.</div>
 </div>
 
 <div class="card">
@@ -192,7 +193,7 @@ input[type=text],input[type=password]{background:#11141a;color:var(--text);borde
 
 <script>
 const $ = id => document.getElementById(id);
-const ranges = ['sens','dead','swTh','tilt','jumpTh','smooth','sideTilt','release'];
+const ranges = ['sens','dead','swTh','tilt','jumpTh','smooth','sideTilt','release','accel'];
 const selects = ['axX','axY','swAx','touchMode'];
 const checks = ['invX','lookY','invY','swInv','clickRight','jumpOn','swapTilt','invFB','invLR','diag','outBle','outUsb','autoZero','absMouse'];
 

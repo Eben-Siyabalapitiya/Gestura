@@ -27,6 +27,8 @@ struct Settings {
   float release;    // how far below the tilt angle keys let go, deg
   bool autoZero;    // slowly re-centre the move hand while it is still
   bool absMouse;    // hand angle = camera angle (instead of speed-based)
+  float accel;      // 1 = steady, higher = flick fast to turn far, move back
+                    // slowly to re-centre your hand without turning
 };
 
 // ---------- one gyro ----------
