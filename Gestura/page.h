@@ -7,7 +7,7 @@ const char PAGE[] PROGMEM = R"rawliteral(
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>GameGlove</title>
+<title>Gestura</title>
 <style>
 :root{--bg:#0f1115;--card:#181b22;--line:#2a2f3a;--text:#e8eaf0;--dim:#8a91a0;--acc:#4f8cff;--on:#33d17a;--warn:#f5c211;--bad:#ff5c5c}
 *{box-sizing:border-box}
@@ -63,7 +63,7 @@ input[type=text],input[type=password]{background:#11141a;color:var(--text);borde
 </head>
 <body>
 <div class="wrap">
-<h1>GameGlove</h1>
+<h1>Gestura</h1>
 <div class="status">
   <span class="pill" id="pBle">Bluetooth</span>
   <span class="pill" id="pH0">Mouse hand</span>
@@ -143,6 +143,8 @@ input[type=text],input[type=password]{background:#11141a;color:var(--text);borde
     <label><input type="checkbox" id="invY"> Flip up/down</label>
     <label><input type="checkbox" id="swInv"> Flip swing</label>
     <label><input type="checkbox" id="clickRight"> Swing = right click</label>
+    <label><input type="checkbox" id="outBle"> Send over Bluetooth</label>
+    <label><input type="checkbox" id="outUsb"> Send over USB cable</label>
   </div>
   <div class="hint">Swing your hand and watch the X/Y/Z bars: the one that jumps the most is your swing axis. Turn your hand the same way to find the turn axis.</div>
 </div>
@@ -152,10 +154,12 @@ input[type=text],input[type=password]{background:#11141a;color:var(--text);borde
   <div class="set"><label>Smoothing (both hands)</label><input type="range" id="smooth" min="0" max="0.9" step="0.05"><output id="o_smooth"></output></div>
   <div class="set"><label>Tilt for W/S (deg)</label><input type="range" id="tilt" min="5" max="40" step="1"><output id="o_tilt"></output></div>
   <div class="set"><label>Tilt for A/D (deg)</label><input type="range" id="sideTilt" min="5" max="45" step="1"><output id="o_sideTilt"></output></div>
+  <div class="set"><label>Key release margin (deg)</label><input type="range" id="release" min="0" max="20" step="1"><output id="o_release"></output></div>
   <div class="set"><label>Jump drop (g)</label><input type="range" id="jumpTh" min="0.1" max="0.9" step="0.05"><output id="o_jumpTh"></output></div>
   <div class="chk">
     <label><input type="checkbox" id="jumpOn"> Jump on</label>
     <label><input type="checkbox" id="diag"> Allow diagonal (W+A)</label>
+    <label><input type="checkbox" id="autoZero"> Auto re-centre when still</label>
     <label><input type="checkbox" id="swapTilt"> Swap forward/sideways</label>
     <label><input type="checkbox" id="invFB"> Flip forward/back</label>
     <label><input type="checkbox" id="invLR"> Flip left/right</label>
@@ -178,7 +182,7 @@ input[type=text],input[type=password]{background:#11141a;color:var(--text);borde
   <div class="set"><label>Broker port</label><input type="text" id="n_port" placeholder="8883"><span></span></div>
   <div class="set"><label>Broker username</label><input type="text" id="n_user"><span></span></div>
   <div class="set"><label>Broker password</label><input type="password" id="n_mpass"><span></span></div>
-  <div class="set"><label>Topic</label><input type="text" id="n_topic" placeholder="gameglove"><span></span></div>
+  <div class="set"><label>Topic</label><input type="text" id="n_topic" placeholder="gestura"><span></span></div>
   <div class="row"><button onclick="saveNet()">Save and restart</button></div>
   <div class="hint">Use your phone hotspot for WiFi. After saving, the glove restarts and connects to HiveMQ, and you can open the cloud dashboard from any network. Your details are stored on the glove, not in the code.</div>
 </div>
@@ -187,9 +191,9 @@ input[type=text],input[type=password]{background:#11141a;color:var(--text);borde
 
 <script>
 const $ = id => document.getElementById(id);
-const ranges = ['sens','dead','swTh','tilt','jumpTh','smooth','sideTilt'];
+const ranges = ['sens','dead','swTh','tilt','jumpTh','smooth','sideTilt','release'];
 const selects = ['axX','axY','swAx','touchMode'];
-const checks = ['invX','lookY','invY','swInv','clickRight','jumpOn','swapTilt','invFB','invLR','diag'];
+const checks = ['invX','lookY','invY','swInv','clickRight','jumpOn','swapTilt','invFB','invLR','diag','outBle','outUsb','autoZero'];
 
 function toast(t){const m=$('msg');m.textContent=t;m.style.opacity=1;setTimeout(()=>m.style.opacity=0,1400)}
 function act(path,t){return fetch('/'+path).then(()=>{if(t)toast(t)})}

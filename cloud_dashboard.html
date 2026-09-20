@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>GameGlove Cloud</title>
+<title>Gestura Cloud</title>
 <style>
 :root{--bg:#0f1115;--card:#181b22;--line:#2a2f3a;--text:#e8eaf0;--dim:#8a91a0;--acc:#4f8cff;--on:#33d17a;--warn:#f5c211;--bad:#ff5c5c}
 *{box-sizing:border-box}
@@ -60,7 +60,7 @@ input[type=text],input[type=password]{background:#11141a;color:var(--text);borde
 </head>
 <body>
 <div class="wrap">
-<h1>GameGlove Cloud</h1>
+<h1>Gestura Cloud</h1>
 
 <div class="card" id="login">
   <h2>Connect to HiveMQ</h2>
@@ -68,7 +68,7 @@ input[type=text],input[type=password]{background:#11141a;color:var(--text);borde
   <div class="set"><label>Port (websocket)</label><input type="text" id="c_port" value="8884"><span></span></div>
   <div class="set"><label>Username</label><input type="text" id="c_user"><span></span></div>
   <div class="set"><label>Password</label><input type="password" id="c_pass"><span></span></div>
-  <div class="set"><label>Topic</label><input type="text" id="c_topic" value="gameglove"><span></span></div>
+  <div class="set"><label>Topic</label><input type="text" id="c_topic" value="gestura"><span></span></div>
   <div class="row"><button onclick="connect()">Connect</button></div>
   <div class="hint">Same details you put into the glove, but the port is 8884 (websockets). Saved in this browser only.</div>
 </div>
@@ -153,6 +153,8 @@ input[type=text],input[type=password]{background:#11141a;color:var(--text);borde
     <label><input type="checkbox" id="invY"> Flip up/down</label>
     <label><input type="checkbox" id="swInv"> Flip swing</label>
     <label><input type="checkbox" id="clickRight"> Swing = right click</label>
+    <label><input type="checkbox" id="outBle"> Send over Bluetooth</label>
+    <label><input type="checkbox" id="outUsb"> Send over USB cable</label>
   </div>
 </div>
 
@@ -161,10 +163,12 @@ input[type=text],input[type=password]{background:#11141a;color:var(--text);borde
   <div class="set"><label>Smoothing (both hands)</label><input type="range" id="smooth" min="0" max="0.9" step="0.05"><output id="o_smooth"></output></div>
   <div class="set"><label>Tilt for W/S (deg)</label><input type="range" id="tilt" min="5" max="40" step="1"><output id="o_tilt"></output></div>
   <div class="set"><label>Tilt for A/D (deg)</label><input type="range" id="sideTilt" min="5" max="45" step="1"><output id="o_sideTilt"></output></div>
+  <div class="set"><label>Key release margin (deg)</label><input type="range" id="release" min="0" max="20" step="1"><output id="o_release"></output></div>
   <div class="set"><label>Jump drop (g)</label><input type="range" id="jumpTh" min="0.1" max="0.9" step="0.05"><output id="o_jumpTh"></output></div>
   <div class="chk">
     <label><input type="checkbox" id="jumpOn"> Jump on</label>
     <label><input type="checkbox" id="diag"> Allow diagonal (W+A)</label>
+    <label><input type="checkbox" id="autoZero"> Auto re-centre when still</label>
     <label><input type="checkbox" id="swapTilt"> Swap forward/sideways</label>
     <label><input type="checkbox" id="invFB"> Flip forward/back</label>
     <label><input type="checkbox" id="invLR"> Flip left/right</label>
@@ -181,10 +185,10 @@ input[type=text],input[type=password]{background:#11141a;color:var(--text);borde
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/5.3.4/mqtt.min.js"></script>
 <script>
 const $ = id => document.getElementById(id);
-const ranges = ['sens','dead','swTh','tilt','jumpTh','smooth','sideTilt'];
+const ranges = ['sens','dead','swTh','tilt','jumpTh','smooth','sideTilt','release'];
 const selects = ['axX','axY','swAx','touchMode'];
-const checks = ['invX','lookY','invY','swInv','clickRight','jumpOn','swapTilt','invFB','invLR','diag'];
-let client = null, topic = 'gameglove', lastSeen = 0, gotSettings = false;
+const checks = ['invX','lookY','invY','swInv','clickRight','jumpOn','swapTilt','invFB','invLR','diag','outBle','outUsb','autoZero'];
+let client = null, topic = 'gestura', lastSeen = 0, gotSettings = false;
 
 function toast(t){const m=$('msg');m.textContent=t;m.style.opacity=1;setTimeout(()=>m.style.opacity=0,1400)}
 function pill(id,cls,text){const e=$(id);e.className='pill '+cls;e.textContent=text}
@@ -225,7 +229,7 @@ function draw(d){
 function connect(){
   const host = $('c_host').value.trim(), port = $('c_port').value.trim() || '8884';
   const user = $('c_user').value.trim(), pass = $('c_pass').value;
-  topic = $('c_topic').value.trim() || 'gameglove';
+  topic = $('c_topic').value.trim() || 'gestura';
   if(!host){ toast('Enter the broker host'); return }
   try{ localStorage.setItem('gg', JSON.stringify({host,port,user,pass,topic})) }catch(e){}
 

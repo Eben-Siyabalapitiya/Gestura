@@ -1,4 +1,4 @@
-// GameGlove - motion control gloves for gaming (LoR Core V3)
+// Gestura - motion control gloves for gaming (LoR Core V3)
 //
 // Hand 1 (gyro 0x68, "mouse hand"): turn hand = mouse, swing down = click
 // Hand 2 (gyro 0x69, "move hand"):  tilt = W/A/S/D, quick drop = jump
@@ -7,8 +7,8 @@
 // Board buttons: A = zero both hands, B = hold F13 (voice push-to-talk),
 //                C = swap left/right click, D = pause
 //
-// Shows up as Bluetooth mouse+keyboard "GameGlove".
-// Calibration page: join WiFi "GameGlove" (pass glove1234), open 192.168.4.1
+// Shows up as Bluetooth mouse+keyboard "Gestura".
+// Calibration page: join WiFi "Gestura" (pass gestura123), open 192.168.4.1
 //
 // Wiring (LoR Core V3 labels):
 //   Both gyros SCL -> port 11 SIG, SDA -> port 12 SIG
@@ -35,29 +35,29 @@ const int PIN_TOUCH[3] = {32, 25, 26};         // port 01 / 02 / 03 SIG
 const int BTN_A = 35, BTN_B = 39, BTN_C = 38, BTN_D = 37;
 const int PIN_LED = 33, NUM_LEDS = 4;
 
-const char* AP_SSID = "GameGlove";
-const char* AP_PASS = "glove1234";
+const char* AP_SSID = "Gestura";
+const char* AP_PASS = "gestura123";
 
 // ---------- HID key codes ----------
 const uint8_t KEY_W = 0x1A, KEY_A = 0x04, KEY_S = 0x16, KEY_D = 0x07;
 const uint8_t KEY_SPACE = 0x2C, KEY_F13 = 0x68;
 
 // ---------- settings (saved to flash) ----------
-const uint16_t SET_VER = 4;
+const uint16_t SET_VER = 6;
 Settings S;
 
 void setDefaults() {
   S = {SET_VER, 1.0f, 8.0f, 2, 1, false, false, false, 1, false, 250.0f, false,
        18.0f, false, false, false, true, 0.45f, 0,
-       0.6f, false, 22.0f};
+       0.6f, false, 22.0f, true, true, 8.0f, true};
 }
 
 // ---------- cloud settings (WiFi + HiveMQ), kept out of the code ----------
-String netSsid, netPass, mqHost, mqUser, mqPass, mqTopic = "gameglove";
+String netSsid, netPass, mqHost, mqUser, mqPass, mqTopic = "gestura";
 uint16_t mqPort = 8883;
 WiFiClientSecure tls;
 PubSubClient mqtt(tls);
-uint32_t lastMqttTry = 0, lastPub = 0, hurtUntil = 0;
+uint32_t lastMqttTry = 0, lastPub = 0, hurtUntil = 0, usbSeen = 0;
 
 Preferences prefs;
 
@@ -68,7 +68,7 @@ void loadNet() {
   mqHost  = prefs.getString("host", "");
   mqUser  = prefs.getString("user", "");
   mqPass  = prefs.getString("mpass", "");
-  mqTopic = prefs.getString("topic", "gameglove");
+  mqTopic = prefs.getString("topic", "gestura");
   mqPort  = prefs.getUShort("port", 8883);
   prefs.end();
 }
@@ -166,9 +166,17 @@ volatile bool bleConn = false;
 extern bool touch[3];
 extern bool comboFired;
 
+bool usbActive() { return millis() - usbSeen < 2000; }  // laptop bridge is running
+
 void updateLeds() {
   bool blink = (millis() / 400) % 2;
-  leds[0] = bleConn ? CRGB::Green : (blink ? CRGB::Blue : CRGB::Black);
+  bool usb = usbActive();
+  // LED 1: white = USB + Bluetooth, cyan = USB only, green = Bluetooth only,
+  //        blinking blue = nothing connected
+  if (usb && bleConn)      leds[0] = CRGB::White;
+  else if (usb)            leds[0] = CRGB::Cyan;
+  else if (bleConn)        leds[0] = CRGB::Green;
+  else                     leds[0] = blink ? CRGB::Blue : CRGB::Black;
   leds[1] = imu[0].ok ? CRGB::Green : CRGB::Red;
   leds[2] = imu[1].ok ? CRGB::Green : CRGB::Red;
   if (millis() < hurtUntil) {     // took damage in game -> all red
@@ -215,7 +223,7 @@ class ServerCallbacks : public NimBLEServerCallbacks {
 };
 
 void bleBegin() {
-  NimBLEDevice::init("GameGlove");
+  NimBLEDevice::init("Gestura");
   NimBLEDevice::setSecurityAuth(true, false, true);
   NimBLEDevice::setSecurityIOCap(BLE_HS_IO_NO_INPUT_OUTPUT);
   NimBLEServer* srv = NimBLEDevice::createServer();
@@ -223,7 +231,7 @@ void bleBegin() {
   srv->advertiseOnDisconnect(true);
 
   hid = new NimBLEHIDDevice(srv);
-  hid->setManufacturer("GameGlove");
+  hid->setManufacturer("Gestura");
   hid->setPnp(0x02, 0xe502, 0xa111, 0x0210);
   hid->setHidInfo(0x00, 0x01);
   hid->setReportMap((uint8_t*)REPORT_MAP, sizeof(REPORT_MAP));
@@ -235,7 +243,7 @@ void bleBegin() {
   NimBLEAdvertising* adv = NimBLEDevice::getAdvertising();
   adv->setAppearance(0x03C1);
   adv->addServiceUUID(hid->getHidService()->getUUID());
-  adv->setName("GameGlove");
+  adv->setName("Gestura");
   adv->enableScanResponse(true);
   adv->start();
 }
@@ -269,18 +277,24 @@ void sendKeyboard(bool force = false) {
   if (keyD) r[i++] = KEY_D;
   if (now < jumpUntil) r[i++] = KEY_SPACE;
   if ((pttHeld || now < voiceTapUntil) && i < 8) r[i++] = KEY_F13;
-  if (!bleConn) return;
   if (!force && memcmp(r, lastKb, 8) == 0) return;
   memcpy(lastKb, r, 8);
+
+  if (S.outUsb) {   // USB: the laptop bridge presses these keys
+    Serial.printf("GG:K:%d%d%d%d%d%d\n", keyW, keyA, keyS, keyD,
+                  now < jumpUntil, (pttHeld || now < voiceTapUntil));
+  }
+  if (!S.outBle || !bleConn) return;
   kbIn->setValue(r, 8);
   kbIn->notify();
 }
 
 void sendMouse(int8_t dx, int8_t dy, int8_t wheel, bool force = false) {
-  if (!bleConn) return;
   if (!force && dx == 0 && dy == 0 && wheel == 0 && mouseBtns == lastBtns) return;
-  uint8_t r[4] = {mouseBtns, (uint8_t)dx, (uint8_t)dy, (uint8_t)wheel};
+  if (S.outUsb) Serial.printf("GG:M:%d,%d,%d,%d\n", dx, dy, mouseBtns, wheel);
   lastBtns = mouseBtns;
+  if (!S.outBle || !bleConn) return;
+  uint8_t r[4] = {mouseBtns, (uint8_t)dx, (uint8_t)dy, (uint8_t)wheel};
   msIn->setValue(r, 4);
   msIn->notify();
 }
@@ -431,9 +445,22 @@ void controlStep(float dt) {
     lrS = lrS * S.smooth + lr * (1 - S.smooth);
     float afb = fabsf(fbS), alr = fabsf(lrS);
 
-    const float hyst = 4.0f; // stops keys flickering at the edge
+    // keys release well before they trigger, so coming back to neutral
+    // definitely stops you walking
+    float hyst = S.release;
     bool fbOn = (keyW || keyS) ? afb > S.tilt - hyst : afb > S.tilt;
     bool lrOn = (keyA || keyD) ? alr > S.sideTilt - hyst : alr > S.sideTilt;
+
+    // slow auto re-centre: while the hand is held still and roughly level,
+    // drag the zero point towards where it actually is, so drift can't
+    // build up into phantom walking
+    if (S.autoZero && !fbOn && !lrOn) {
+      float spin = fabsf(imu[1].gx) + fabsf(imu[1].gy) + fabsf(imu[1].gz);
+      if (spin < 10.0f && afb < S.tilt * 0.7f && alr < S.sideTilt * 0.7f) {
+        imu[1].p0 += (imu[1].pitch - imu[1].p0) * 0.01f;
+        imu[1].r0 += (imu[1].roll - imu[1].r0) * 0.01f;
+      }
+    }
 
     // only the strongest direction wins, unless diagonals are on and
     // both tilts are close in size
@@ -479,7 +506,7 @@ String settingsJson() {
            "\"smooth\":%.2f,\"diag\":%d,\"sideTilt\":%.0f}",
            S.sens, S.dead, S.axX, S.axY, S.invX, S.invY, S.lookY, S.swAx, S.swInv, S.swTh,
            S.clickRight, S.tilt, S.swapTilt, S.invFB, S.invLR, S.jumpOn, S.jumpTh, S.touchMode,
-           S.smooth, S.diag, S.sideTilt);
+           S.smooth, S.diag, S.sideTilt, S.outBle, S.outUsb, S.release, S.autoZero);
   return b;
 }
 
@@ -523,6 +550,10 @@ void setKey(const String& k, const String& v) {
   else if (k == "smooth") S.smooth = constrain(f, 0.0f, 0.95f);
   else if (k == "diag") S.diag = i;
   else if (k == "sideTilt") S.sideTilt = f;
+  else if (k == "outBle") S.outBle = i;
+  else if (k == "outUsb") S.outUsb = i;
+  else if (k == "release") S.release = f;
+  else if (k == "autoZero") S.autoZero = i;
 }
 
 void runCommand(const String& c) {
@@ -661,13 +692,18 @@ void setup() {
   loadNet();
   webBegin();
   mqttBegin();
-  Serial.println("GameGlove ready. WiFi: GameGlove / glove1234 -> http://192.168.4.1");
+  Serial.println("Gestura ready. WiFi: Gestura / gestura123 -> http://192.168.4.1");
   lastCtl = micros();
 }
 
 void loop() {
   server.handleClient();
   mqttLoop();
+
+  // the laptop bridge sends 'P' every half second so we know it's listening
+  while (Serial.available()) {
+    if (Serial.read() == 'P') usbSeen = millis();
+  }
 
   uint32_t now = micros();
   if (now - lastCtl >= 10000) {

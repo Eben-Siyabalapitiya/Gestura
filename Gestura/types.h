@@ -22,6 +22,10 @@ struct Settings {
   float smooth;     // 0 = raw, 0.9 = very smooth (both hands)
   bool diag;        // allow diagonal walking (W+A etc)
   float sideTilt;   // tilt angle for A/D, deg
+  bool outBle;      // send input over Bluetooth
+  bool outUsb;      // send input over USB to the laptop bridge
+  float release;    // how far below the tilt angle keys let go, deg
+  bool autoZero;    // slowly re-centre the move hand while it is still
 };
 
 // ---------- one gyro ----------

@@ -1,4 +1,4 @@
-# GameGlove — Hack the North 2026
+# Gestura — Hack the North 2026
 
 Motion control gloves for gaming. One hand is the mouse, the other hand is the keyboard, so you can play any game (like Minecraft) with whatever you're holding, even a water bottle as a sword.
 
@@ -23,8 +23,8 @@ Board buttons: **A** = zero both hands, **B** = voice push-to-talk (sends F13), 
 ```
 Hack the North Project/
   README.md          <- this file
-  GameGlove/
-    GameGlove.ino    <- main code for the LoR Core V3
+  Gestura/
+    Gestura.ino    <- main code for the LoR Core V3
     page.h           <- calibration web page
     types.h          <- settings / gyro structs
 ```
@@ -60,7 +60,7 @@ Hack the North Project/
 
 ## Uploading
 
-1. Open `GameGlove/GameGlove.ino` in Arduino IDE
+1. Open `Gestura/Gestura.ino` in Arduino IDE
 2. Libraries needed: **NimBLE-Arduino** (2.x) and **FastLED**
 3. Board: **ESP32 Dev Module**
 4. Tools → Partition Scheme: **Huge APP (3MB No OTA/1MB SPIFFS)**
@@ -69,8 +69,8 @@ Hack the North Project/
 ## Using it
 
 1. Power on and **hold both hands still for ~1 second** while it zeros (LED 4 yellow)
-2. Laptop: Bluetooth settings → Add device → **GameGlove** (only the first time, after that it reconnects on its own)
-3. Calibration page: connect your phone to WiFi **GameGlove** (password `glove1234`) and open **http://192.168.4.1**
+2. Laptop: Bluetooth settings → Add device → **Gestura** (only the first time, after that it reconnects on its own)
+3. Calibration page: connect your phone to WiFi **Gestura** (password `gestura123`) and open **http://192.168.4.1**
 
 The page shows a live 3D view of each hand, the gyro bars, which keys are being pressed, zero buttons, and sliders for everything (mouse speed, deadzone, swing strength, tilt angle, jump, axis flips). Hit **Save settings** so it remembers after power off.
 
@@ -82,7 +82,7 @@ The page shows a live 3D view of each hand, the gyro bars, which keys are being 
 - **Mouse goes the wrong way:** tick "Flip turn" on the page. Turning moves nothing? Change "Turn axis" (watch which X/Y/Z bar moves when you turn your hand).
 - **Clicks when you don't want:** raise "Swing click strength".
 - **Walks by itself:** zero the move hand again, or raise "Tilt to walk".
-- **Changed the Bluetooth code and Windows acts weird:** remove GameGlove from Bluetooth settings and pair it again.
+- **Changed the Bluetooth code and Windows acts weird:** remove Gestura from Bluetooth settings and pair it again.
 
 ## Badge controller (GlovePad)
 
