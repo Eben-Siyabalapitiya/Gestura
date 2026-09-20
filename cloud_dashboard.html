@@ -3,184 +3,263 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Gestura Cloud</title>
+<title>Gestura</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#0f1115;--card:#181b22;--line:#2a2f3a;--text:#e8eaf0;--dim:#8a91a0;--acc:#4f8cff;--on:#33d17a;--warn:#f5c211;--bad:#ff5c5c}
+:root{
+  --bg:#07080c;
+  --panel:rgba(255,255,255,.035);
+  --panel-2:rgba(255,255,255,.055);
+  --line:rgba(255,255,255,.09);
+  --text:#eef1f7;
+  --dim:#7d8598;
+  --acc:#5b8cff;
+  --live:#3ddc84;
+  --warn:#ffcb47;
+  --bad:#ff5f5f;
+  --mono:"JetBrains Mono",ui-monospace,monospace;
+}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--text);font:15px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:16px}
-h1{font-size:20px;margin:0 0 4px}
-h2{font-size:15px;margin:0 0 10px;color:var(--dim);font-weight:600;text-transform:uppercase;letter-spacing:.05em}
-.wrap{max-width:900px;margin:0 auto}
-.status{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
-.pill{padding:4px 10px;border-radius:999px;background:var(--card);border:1px solid var(--line);font-size:13px;color:var(--dim)}
-.pill.on{background:var(--on);color:#0b1a10;border-color:var(--on);font-weight:700}
-.pill.bad{background:var(--bad);color:#fff;border-color:var(--bad)}
-.pill.warn{background:var(--warn);color:#1a1500;border-color:var(--warn)}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-@media(max-width:640px){.grid{grid-template-columns:1fr}}
-.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
-.scene{height:170px;perspective:600px;display:flex;align-items:center;justify-content:center}
-.box{position:relative;width:120px;height:20px;transform-style:preserve-3d;transition:transform 80ms linear}
-.f{position:absolute;border:1px solid rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
-.top,.bot{width:120px;height:80px;top:-30px}
-.top{transform:rotateX(90deg) translateZ(10px);background:rgba(79,140,255,.85)}
-.bot{transform:rotateX(-90deg) translateZ(10px);background:rgba(79,140,255,.35)}
-.fr,.bk{width:120px;height:20px}
-.fr{transform:translateZ(40px);background:rgba(245,194,17,.9);color:#1a1500}
-.bk{transform:rotateY(180deg) translateZ(40px);background:rgba(79,140,255,.6)}
-.lf,.rt{width:80px;height:20px;left:20px}
-.lf{transform:rotateY(-90deg) translateZ(60px);background:rgba(79,140,255,.6)}
-.rt{transform:rotateY(90deg) translateZ(60px);background:rgba(79,140,255,.6)}
-.nums{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;text-align:center;margin:8px 0}
-.nums div{background:#11141a;border-radius:8px;padding:6px}
-.nums b{display:block;font-size:17px}
-.nums span{font-size:11px;color:var(--dim)}
-.bar{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--dim);margin:4px 0}
-.bar .t{flex:1;height:8px;background:#11141a;border-radius:4px;position:relative;overflow:hidden}
-.bar .t::after{content:"";position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--line)}
-.bar i{position:absolute;top:0;bottom:0;background:var(--acc)}
-.keys{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-.key{min-width:38px;text-align:center;padding:6px 8px;border-radius:8px;background:#11141a;border:1px solid var(--line);font-weight:700;font-size:13px;color:var(--dim)}
-.key.on{background:var(--on);color:#0b1a10;border-color:var(--on)}
-button{background:var(--acc);color:#fff;border:0;border-radius:8px;padding:9px 14px;font-weight:600;font-size:14px;cursor:pointer}
-button.sec{background:#2a2f3a}
-button:active{transform:scale(.97)}
-.row{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
-.set{display:grid;grid-template-columns:150px 1fr 56px;align-items:center;gap:8px;margin:8px 0}
-.set label{font-size:13px;color:var(--dim)}
-.set output{font-size:13px;text-align:right}
-.chk{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:13px;color:var(--dim)}
-select{background:#11141a;color:var(--text);border:1px solid var(--line);border-radius:6px;padding:4px}
-input[type=range]{width:100%}
-input[type=text],input[type=password]{background:#11141a;color:var(--text);border:1px solid var(--line);border-radius:6px;padding:6px;width:100%;font-size:14px}
-.hint{font-size:12px;color:var(--dim);margin-top:6px}
-#msg{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--on);color:#0b1a10;padding:8px 16px;border-radius:999px;font-weight:700;opacity:0;transition:opacity .3s}
+html,body{height:100%}
+body{
+  margin:0;background:var(--bg);color:var(--text);
+  font:15px/1.5 Inter,system-ui,-apple-system,Segoe UI,sans-serif;
+  -webkit-font-smoothing:antialiased;padding:28px 16px 60px;
+  background-image:
+    radial-gradient(900px 500px at 15% -10%,rgba(91,140,255,.16),transparent 60%),
+    radial-gradient(700px 500px at 100% 0%,rgba(61,220,132,.10),transparent 55%);
+  background-attachment:fixed;
+}
+.wrap{max-width:980px;margin:0 auto}
+
+/* header */
+header{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:22px;flex-wrap:wrap}
+.brand h1{margin:0;font-size:26px;font-weight:700;letter-spacing:-.02em}
+.brand p{margin:2px 0 0;color:var(--dim);font-size:13px}
+.dots{display:flex;gap:18px;align-items:center}
+.stat{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--dim)}
+.dot{width:8px;height:8px;border-radius:50%;background:#2a2f3b;box-shadow:none;transition:background .25s,box-shadow .25s}
+.stat.on .dot{background:var(--live);box-shadow:0 0 0 3px rgba(61,220,132,.15),0 0 12px rgba(61,220,132,.8);animation:pulse 2.4s ease-in-out infinite}
+.stat.on{color:var(--text)}
+.stat.warn .dot{background:var(--warn);box-shadow:0 0 0 3px rgba(255,203,71,.15)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.55}}
+
+/* panels */
+.card{
+  background:linear-gradient(180deg,var(--panel-2),var(--panel));
+  border:1px solid var(--line);border-radius:18px;padding:20px;
+  backdrop-filter:blur(14px);box-shadow:0 1px 0 rgba(255,255,255,.04) inset,0 18px 40px -28px #000;
+}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+@media(max-width:720px){.grid{grid-template-columns:1fr}}
+.card h2{margin:0 0 2px;font-size:14px;font-weight:600;letter-spacing:.01em}
+.card h2 span{color:var(--dim);font-weight:400;margin-left:8px;font-size:12px}
+
+/* 3d hand */
+.scene{height:190px;perspective:760px;display:flex;align-items:center;justify-content:center;position:relative}
+.scene::after{
+  content:"";position:absolute;bottom:26px;width:180px;height:34px;border-radius:50%;
+  background:radial-gradient(ellipse,rgba(91,140,255,.16),transparent 70%);filter:blur(6px);
+}
+.box{position:relative;width:132px;height:22px;transform-style:preserve-3d;transition:transform 70ms linear}
+.f{position:absolute;border:1px solid rgba(160,190,255,.45);background:rgba(91,140,255,.08);
+   display:flex;align-items:center;justify-content:center;
+   font-size:10px;letter-spacing:.12em;font-weight:600;color:rgba(220,232,255,.75)}
+.top,.bot{width:132px;height:86px;top:-32px}
+.top{transform:rotateX(90deg) translateZ(11px);background:rgba(91,140,255,.16)}
+.bot{transform:rotateX(-90deg) translateZ(11px);background:rgba(91,140,255,.04)}
+.fr,.bk{width:132px;height:22px}
+.fr{transform:translateZ(43px);background:rgba(61,220,132,.16);border-color:rgba(61,220,132,.5);color:rgba(215,255,232,.9)}
+.bk{transform:rotateY(180deg) translateZ(43px)}
+.lf,.rt{width:86px;height:22px;left:23px}
+.lf{transform:rotateY(-90deg) translateZ(66px)}
+.rt{transform:rotateY(90deg) translateZ(66px)}
+
+/* readouts */
+.nums{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);
+      border:1px solid var(--line);border-radius:12px;overflow:hidden;margin:6px 0 14px}
+.nums div{background:rgba(10,12,18,.6);padding:10px 8px;text-align:center}
+.nums b{display:block;font-family:var(--mono);font-size:18px;font-weight:500;font-variant-numeric:tabular-nums}
+.nums span{font-size:10px;color:var(--dim);letter-spacing:.1em;text-transform:uppercase}
+.bar{display:flex;align-items:center;gap:10px;font-size:11px;color:var(--dim);margin:7px 0;font-family:var(--mono)}
+.bar .t{flex:1;height:3px;background:rgba(255,255,255,.07);border-radius:2px;position:relative}
+.bar .t::after{content:"";position:absolute;left:50%;top:-3px;bottom:-3px;width:1px;background:rgba(255,255,255,.12)}
+.bar i{position:absolute;top:0;bottom:0;background:linear-gradient(90deg,var(--acc),#8fb2ff);border-radius:2px;transition:width .06s linear,left .06s linear}
+
+.keys{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+.key{padding:6px 10px;border-radius:8px;background:rgba(255,255,255,.04);border:1px solid var(--line);
+     font-size:11px;font-weight:600;letter-spacing:.06em;color:var(--dim);transition:.15s}
+.key.on{background:rgba(61,220,132,.16);border-color:rgba(61,220,132,.5);color:#bff5d6;
+        box-shadow:0 0 18px -6px rgba(61,220,132,.7)}
+
+/* controls */
+.row{display:flex;flex-wrap:wrap;gap:10px}
+button{background:rgba(255,255,255,.06);color:var(--text);border:1px solid var(--line);
+       border-radius:10px;padding:9px 15px;font:inherit;font-size:13px;font-weight:500;cursor:pointer;transition:.15s}
+button:hover{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.18)}
+button.primary{background:linear-gradient(180deg,#6b98ff,#4d7ef0);border-color:transparent;color:#fff;font-weight:600}
+button.primary:hover{filter:brightness(1.08)}
+button:active{transform:translateY(1px)}
+.tune{display:grid;grid-template-columns:1fr 1fr;gap:0 28px}
+@media(max-width:720px){.tune{grid-template-columns:1fr}}
+.set{display:grid;grid-template-columns:1fr 46px;align-items:center;gap:6px;margin:14px 0 0}
+.set label{font-size:13px;color:var(--dim);grid-column:1}
+.set output{font-family:var(--mono);font-size:12px;text-align:right;color:var(--text)}
+.set input[type=range]{grid-column:1 / -1;width:100%;margin:6px 0 0;appearance:none;height:3px;border-radius:2px;
+  background:rgba(255,255,255,.1)}
+.set input[type=range]::-webkit-slider-thumb{appearance:none;width:15px;height:15px;border-radius:50%;
+  background:#fff;border:3px solid var(--acc);cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.5)}
+.chk{display:flex;flex-wrap:wrap;gap:10px 18px;margin-top:18px;font-size:13px;color:var(--dim)}
+.chk label{display:flex;align-items:center;gap:7px;cursor:pointer}
+.chk input{accent-color:var(--acc);width:15px;height:15px}
+select,input[type=text],input[type=password]{
+  background:rgba(10,12,18,.7);color:var(--text);border:1px solid var(--line);
+  border-radius:9px;padding:8px 10px;font:inherit;font-size:13px;width:100%}
+.sep{height:1px;background:var(--line);margin:22px 0 4px}
+.sub{font-size:11px;color:var(--dim);letter-spacing:.12em;text-transform:uppercase;margin:0 0 4px}
+
+#login{max-width:430px;margin:8vh auto 0}
+#login .set{grid-template-columns:1fr}
+#msg{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+     background:rgba(20,24,32,.95);border:1px solid var(--line);color:var(--text);
+     padding:10px 18px;border-radius:999px;font-size:13px;font-weight:500;
+     opacity:0;pointer-events:none;transition:opacity .25s;backdrop-filter:blur(10px)}
 .hidden{display:none}
 </style>
 </head>
 <body>
 <div class="wrap">
-<h1>Gestura Cloud</h1>
 
 <div class="card" id="login">
-  <h2>Connect to HiveMQ</h2>
-  <div class="set"><label>Broker host</label><input type="text" id="c_host" placeholder="xxxx.s1.eu.hivemq.cloud"><span></span></div>
-  <div class="set"><label>Port (websocket)</label><input type="text" id="c_port" value="8884"><span></span></div>
-  <div class="set"><label>Username</label><input type="text" id="c_user"><span></span></div>
-  <div class="set"><label>Password</label><input type="password" id="c_pass"><span></span></div>
-  <div class="set"><label>Topic</label><input type="text" id="c_topic" value="gestura"><span></span></div>
-  <div class="row"><button onclick="connect()">Connect</button></div>
-  <div class="hint">Same details you put into the glove, but the port is 8884 (websockets). Saved in this browser only.</div>
+  <h2>Gestura</h2>
+  <p class="sub" style="margin-top:8px">Connect</p>
+  <div class="set"><label>Broker host</label><input type="text" id="c_host" placeholder="xxxx.s1.eu.hivemq.cloud"></div>
+  <div class="set"><label>Port</label><input type="text" id="c_port" value="8884"></div>
+  <div class="set"><label>Username</label><input type="text" id="c_user"></div>
+  <div class="set"><label>Password</label><input type="password" id="c_pass"></div>
+  <div class="set"><label>Topic</label><input type="text" id="c_topic" value="gestura"></div>
+  <div class="row" style="margin-top:18px"><button class="primary" onclick="connect()">Connect</button></div>
 </div>
 
 <div id="app" class="hidden">
-<div class="status">
-  <span class="pill" id="pCloud">Cloud</span>
-  <span class="pill" id="pGlove">Glove</span>
-  <span class="pill" id="pBle">Bluetooth</span>
-  <span class="pill" id="pMode">Active</span>
-</div>
+  <header>
+    <div class="brand">
+      <h1>Gestura</h1>
+      <p>Motion control gloves</p>
+    </div>
+    <div class="dots">
+      <span class="stat" id="sGlove"><span class="dot"></span>Glove</span>
+      <span class="stat" id="sBle"><span class="dot"></span>Bluetooth</span>
+      <span class="stat" id="sCloud"><span class="dot"></span>Cloud</span>
+    </div>
+  </header>
 
-<div class="grid">
+  <div class="grid">
+    <div class="card">
+      <h2>Aim hand <span id="h0state">—</span></h2>
+      <div class="scene"><div class="box" id="box0">
+        <div class="f top">AIM</div><div class="f bot"></div>
+        <div class="f fr">FRONT</div><div class="f bk"></div>
+        <div class="f lf"></div><div class="f rt"></div>
+      </div></div>
+      <div class="nums">
+        <div><b id="p0">0</b><span>pitch</span></div>
+        <div><b id="r0">0</b><span>roll</span></div>
+        <div><b id="y0">0</b><span>turn</span></div>
+      </div>
+      <div class="bar">X<div class="t"><i id="bx0"></i></div></div>
+      <div class="bar">Y<div class="t"><i id="by0"></i></div></div>
+      <div class="bar">Z<div class="t"><i id="bz0"></i></div></div>
+      <div class="keys">
+        <span class="key" id="kl">LEFT CLICK</span><span class="key" id="kr">RIGHT CLICK</span>
+        <span class="key" id="t0">PAD 1</span><span class="key" id="t1">PAD 2</span>
+      </div>
+      <div class="row" style="margin-top:16px"><button onclick="cmd('zero0','Aim hand zeroed')">Zero</button></div>
+    </div>
+
+    <div class="card">
+      <h2>Move hand <span id="h1state">—</span></h2>
+      <div class="scene"><div class="box" id="box1">
+        <div class="f top">MOVE</div><div class="f bot"></div>
+        <div class="f fr">FRONT</div><div class="f bk"></div>
+        <div class="f lf"></div><div class="f rt"></div>
+      </div></div>
+      <div class="nums">
+        <div><b id="p1">0</b><span>pitch</span></div>
+        <div><b id="r1">0</b><span>roll</span></div>
+        <div><b id="a1">1.00</b><span>g force</span></div>
+      </div>
+      <div class="bar">X<div class="t"><i id="bx1"></i></div></div>
+      <div class="bar">Y<div class="t"><i id="by1"></i></div></div>
+      <div class="bar">Z<div class="t"><i id="bz1"></i></div></div>
+      <div class="keys">
+        <span class="key" id="kw">W</span><span class="key" id="ka">A</span><span class="key" id="ks">S</span>
+        <span class="key" id="kd">D</span><span class="key" id="kj">JUMP</span>
+      </div>
+      <div class="row" style="margin-top:16px"><button onclick="cmd('zero1','Move hand zeroed')">Zero</button></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:16px">
+    <div class="row">
+      <button class="primary" onclick="cmd('zero','Both hands zeroed')">Zero both</button>
+      <button onclick="cmd('pause')">Pause</button>
+      <button onclick="cmd('save','Saved to glove')">Save settings</button>
+      <button onclick="cmd('defaults','Defaults restored')">Reset</button>
+      <button onclick="editConn()">Connection</button>
+    </div>
+  </div>
+
   <div class="card">
-    <h2>Mouse hand</h2>
-    <div class="scene"><div class="box" id="box0">
-      <div class="f top">MOUSE</div><div class="f bot"></div>
-      <div class="f fr">FRONT</div><div class="f bk"></div>
-      <div class="f lf"></div><div class="f rt"></div>
-    </div></div>
-    <div class="nums">
-      <div><b id="p0">0</b><span>pitch</span></div>
-      <div><b id="r0">0</b><span>roll</span></div>
-      <div><b id="y0">0</b><span>turn</span></div>
-    </div>
-    <div class="bar">X<div class="t"><i id="bx0"></i></div></div>
-    <div class="bar">Y<div class="t"><i id="by0"></i></div></div>
-    <div class="bar">Z<div class="t"><i id="bz0"></i></div></div>
-    <div class="keys">
-      <span class="key" id="kl">L CLICK</span><span class="key" id="kr">R CLICK</span>
-      <span class="key" id="t0">TOUCH L</span><span class="key" id="t1">TOUCH R</span><span class="key" id="t2">TAP 3</span>
-    </div>
-    <div class="row"><button onclick="cmd('zero0')">Zero mouse hand</button></div>
-  </div>
+    <div class="tune">
+      <div>
+        <p class="sub">Aiming</p>
+        <div class="set"><label>Speed</label><output id="o_sens"></output><input type="range" id="sens" min="0.2" max="5" step="0.1"></div>
+        <div class="set"><label>Flick boost</label><output id="o_accel"></output><input type="range" id="accel" min="1" max="2.5" step="0.1"></div>
+        <div class="set"><label>Deadzone</label><output id="o_dead"></output><input type="range" id="dead" min="0" max="40" step="0.5"></div>
+        <div class="set"><label>Swing to click</label><output id="o_swTh"></output><input type="range" id="swTh" min="100" max="600" step="10"></div>
+        <div class="chk">
+          <label><input type="checkbox" id="invX"> Flip turn</label>
+          <label><input type="checkbox" id="lookY"> Look up/down</label>
+          <label><input type="checkbox" id="invY"> Flip up/down</label>
+          <label><input type="checkbox" id="swInv"> Flip swing</label>
+          <label><input type="checkbox" id="clickRight"> Swing = right click</label>
+          <label><input type="checkbox" id="absMouse"> Absolute aim</label>
+        </div>
+        <div class="chk">
+          <span>Turn <select id="axX"><option value="0">X</option><option value="1">Y</option><option value="2">Z</option></select></span>
+          <span>Look <select id="axY"><option value="0">X</option><option value="1">Y</option><option value="2">Z</option></select></span>
+          <span>Swing <select id="swAx"><option value="0">X</option><option value="1">Y</option><option value="2">Z</option></select></span>
+        </div>
+      </div>
 
-  <div class="card">
-    <h2>Move hand</h2>
-    <div class="scene"><div class="box" id="box1">
-      <div class="f top">MOVE</div><div class="f bot"></div>
-      <div class="f fr">FRONT</div><div class="f bk"></div>
-      <div class="f lf"></div><div class="f rt"></div>
-    </div></div>
-    <div class="nums">
-      <div><b id="p1">0</b><span>pitch</span></div>
-      <div><b id="r1">0</b><span>roll</span></div>
-      <div><b id="a1">1.00</b><span>accel g</span></div>
+      <div>
+        <p class="sub">Movement</p>
+        <div class="set"><label>Smoothing</label><output id="o_smooth"></output><input type="range" id="smooth" min="0" max="0.9" step="0.05"></div>
+        <div class="set"><label>Tilt forward/back</label><output id="o_tilt"></output><input type="range" id="tilt" min="5" max="40" step="1"></div>
+        <div class="set"><label>Tilt sideways</label><output id="o_sideTilt"></output><input type="range" id="sideTilt" min="5" max="45" step="1"></div>
+        <div class="set"><label>Key release margin</label><output id="o_release"></output><input type="range" id="release" min="0" max="20" step="1"></div>
+        <div class="set"><label>Jump drop</label><output id="o_jumpTh"></output><input type="range" id="jumpTh" min="0.1" max="0.9" step="0.05"></div>
+        <div class="chk">
+          <label><input type="checkbox" id="jumpOn"> Jump</label>
+          <label><input type="checkbox" id="autoZero"> Auto re-centre</label>
+          <label><input type="checkbox" id="diag"> Diagonals</label>
+          <label><input type="checkbox" id="swapTilt"> Swap axes</label>
+          <label><input type="checkbox" id="invFB"> Flip forward</label>
+          <label><input type="checkbox" id="invLR"> Flip sideways</label>
+        </div>
+        <div class="sep"></div>
+        <p class="sub">Output</p>
+        <div class="chk">
+          <label><input type="checkbox" id="outBle"> Bluetooth</label>
+          <label><input type="checkbox" id="outUsb"> USB cable</label>
+          <span>Pads <select id="touchMode"><option value="0">Touch sensor</option><option value="1">Copper tape</option></select></span>
+        </div>
+      </div>
     </div>
-    <div class="bar">X<div class="t"><i id="bx1"></i></div></div>
-    <div class="bar">Y<div class="t"><i id="by1"></i></div></div>
-    <div class="bar">Z<div class="t"><i id="bz1"></i></div></div>
-    <div class="keys">
-      <span class="key" id="kw">W</span><span class="key" id="ka">A</span><span class="key" id="ks">S</span>
-      <span class="key" id="kd">D</span><span class="key" id="kj">JUMP</span><span class="key" id="kv">VOICE</span>
-    </div>
-    <div class="row"><button onclick="cmd('zero1')">Zero move hand</button></div>
   </div>
-</div>
-
-<div class="card">
-  <div class="row" style="margin-top:0">
-    <button onclick="cmd('zero')">Zero both hands</button>
-    <button class="sec" onclick="cmd('pause')">Pause / resume</button>
-    <button onclick="cmd('save','Saved to glove')">Save settings</button>
-    <button class="sec" onclick="cmd('defaults','Defaults loaded')">Reset to defaults</button>
-    <button class="sec" onclick="cmd('hurt')">Test damage flash</button>
-    <button class="sec" onclick="editConn()">Connection settings</button>
-  </div>
-</div>
-
-<div class="card">
-  <h2>Mouse hand</h2>
-  <div class="set"><label>Mouse speed</label><input type="range" id="sens" min="0.2" max="5" step="0.1"><output id="o_sens"></output></div>
-  <div class="set"><label>Deadzone (deg/s)</label><input type="range" id="dead" min="0" max="40" step="0.5"><output id="o_dead"></output></div>
-  <div class="set"><label>Flick boost</label><input type="range" id="accel" min="1" max="2.5" step="0.1"><output id="o_accel"></output></div>
-  <div class="set"><label>Swing click strength</label><input type="range" id="swTh" min="100" max="600" step="10"><output id="o_swTh"></output></div>
-  <div class="chk">
-    <span>Turn axis <select id="axX"><option value="0">X</option><option value="1">Y</option><option value="2">Z</option></select></span>
-    <span>Look up/down axis <select id="axY"><option value="0">X</option><option value="1">Y</option><option value="2">Z</option></select></span>
-    <span>Swing axis <select id="swAx"><option value="0">X</option><option value="1">Y</option><option value="2">Z</option></select></span>
-  </div>
-  <div class="chk">
-    <label><input type="checkbox" id="invX"> Flip turn</label>
-    <label><input type="checkbox" id="lookY"> Allow look up/down</label>
-    <label><input type="checkbox" id="absMouse"> Absolute aim (hand angle = view angle)</label>
-    <label><input type="checkbox" id="invY"> Flip up/down</label>
-    <label><input type="checkbox" id="swInv"> Flip swing</label>
-    <label><input type="checkbox" id="clickRight"> Swing = right click</label>
-    <label><input type="checkbox" id="outBle"> Send over Bluetooth</label>
-    <label><input type="checkbox" id="outUsb"> Send over USB cable</label>
-  </div>
-</div>
-
-<div class="card">
-  <h2>Move hand</h2>
-  <div class="set"><label>Smoothing (both hands)</label><input type="range" id="smooth" min="0" max="0.9" step="0.05"><output id="o_smooth"></output></div>
-  <div class="set"><label>Tilt for W/S (deg)</label><input type="range" id="tilt" min="5" max="40" step="1"><output id="o_tilt"></output></div>
-  <div class="set"><label>Tilt for A/D (deg)</label><input type="range" id="sideTilt" min="5" max="45" step="1"><output id="o_sideTilt"></output></div>
-  <div class="set"><label>Key release margin (deg)</label><input type="range" id="release" min="0" max="20" step="1"><output id="o_release"></output></div>
-  <div class="set"><label>Jump drop (g)</label><input type="range" id="jumpTh" min="0.1" max="0.9" step="0.05"><output id="o_jumpTh"></output></div>
-  <div class="chk">
-    <label><input type="checkbox" id="jumpOn"> Jump on</label>
-    <label><input type="checkbox" id="diag"> Allow diagonal (W+A)</label>
-    <label><input type="checkbox" id="autoZero"> Auto re-centre when still</label>
-    <label><input type="checkbox" id="swapTilt"> Swap forward/sideways</label>
-    <label><input type="checkbox" id="invFB"> Flip forward/back</label>
-    <label><input type="checkbox" id="invLR"> Flip left/right</label>
-  </div>
-  <div class="chk">
-    <span>Touch type <select id="touchMode"><option value="0">Touch sensor (TTP223)</option><option value="1">Copper tape to GND</option></select></span>
-  </div>
-  <div class="hint">Settings apply right away. Hit "Save settings" to keep them after the glove powers off.</div>
-</div>
 </div>
 </div>
 <div id="msg"></div>
@@ -190,17 +269,20 @@ input[type=text],input[type=password]{background:#11141a;color:var(--text);borde
 const $ = id => document.getElementById(id);
 const ranges = ['sens','dead','swTh','tilt','jumpTh','smooth','sideTilt','release','accel'];
 const selects = ['axX','axY','swAx','touchMode'];
-const checks = ['invX','lookY','invY','swInv','clickRight','jumpOn','swapTilt','invFB','invLR','diag','outBle','outUsb','autoZero','absMouse'];
+const checks = ['invX','lookY','invY','swInv','clickRight','jumpOn','swapTilt','invFB','invLR',
+                'diag','outBle','outUsb','autoZero','absMouse'];
 let client = null, topic = 'gestura', lastSeen = 0, gotSettings = false;
 
-function toast(t){const m=$('msg');m.textContent=t;m.style.opacity=1;setTimeout(()=>m.style.opacity=0,1400)}
-function pill(id,cls,text){const e=$(id);e.className='pill '+cls;e.textContent=text}
+function toast(t){const m=$('msg');m.textContent=t;m.style.opacity=1;setTimeout(()=>m.style.opacity=0,1500)}
+function light(id,state,text){const e=$(id);e.className='stat'+(state?' '+state:'');
+  e.lastChild.textContent=text}
 function bar(el,v){const w=Math.min(Math.abs(v)/500,1)*50;el.style.width=w+'%';el.style.left=(v<0?50-w:50)+'%'}
 function on(id,v){$(id).classList.toggle('on',!!v)}
 
-function editConn(){ if(client){try{client.end(true)}catch(e){}} client=null; $('app').classList.add('hidden'); $('login').classList.remove('hidden'); pill('pCloud','','Not connected') }
-function cmd(c,t){ if(client) client.publish(topic+'/cmd', c); toast(t || (c+' sent')) }
+function cmd(c,t){ if(client) client.publish(topic+'/cmd', c); toast(t || 'Sent') }
 function send(k,v){ if(client) client.publish(topic+'/set', k+'='+v) }
+function editConn(){ if(client){try{client.end(true)}catch(e){}} client=null;
+  $('app').classList.add('hidden'); $('login').classList.remove('hidden') }
 
 ranges.forEach(k=>$(k).addEventListener('input',e=>{$('o_'+k).textContent=e.target.value;send(k,e.target.value)}));
 selects.forEach(k=>$(k).addEventListener('change',e=>send(k,e.target.value)));
@@ -214,19 +296,21 @@ function fillSettings(s){
 
 function draw(d){
   lastSeen = Date.now();
-  pill('pBle',d.ble?'on':'warn',d.ble?'Bluetooth connected':'Bluetooth waiting');
-  pill('pMode',d.zeroing?'warn':d.paused?'bad':'on',d.zeroing?'Zeroing':d.paused?'Paused':'Active');
+  light('sBle', d.ble?'on':'', d.ble?'Bluetooth':'Bluetooth');
+  light('sCloud','on','Cloud');
+  $('h0state').textContent = d.h[0].ok ? '' : 'not detected';
+  $('h1state').textContent = d.h[1].ok ? '' : 'not detected';
   d.h.forEach((h,i)=>{
-    $('box'+i).style.transform=`rotateX(-25deg) rotateY(${-h.y}deg) rotateX(${h.p}deg) rotateZ(${h.r}deg)`;
+    $('box'+i).style.transform=`rotateX(-22deg) rotateY(${-h.y}deg) rotateX(${h.p}deg) rotateZ(${h.r}deg)`;
     $('p'+i).textContent=Math.round(h.p);
     $('r'+i).textContent=Math.round(h.r);
     bar($('bx'+i),h.gx);bar($('by'+i),h.gy);bar($('bz'+i),h.gz);
   });
   $('y0').textContent=Math.round(d.h[0].y);
   $('a1').textContent=d.h[1].a.toFixed(2);
-  on('kw',d.k.w);on('ka',d.k.a);on('ks',d.k.s);on('kd',d.k.d);on('kj',d.k.j);on('kv',d.k.v);
+  on('kw',d.k.w);on('ka',d.k.a);on('ks',d.k.s);on('kd',d.k.d);on('kj',d.k.j);
   on('kl',d.k.l);on('kr',d.k.r);
-  on('t0',d.t[0]);on('t1',d.t[1]);on('t2',d.t[2]);
+  on('t0',d.t[0]);on('t1',d.t[1]);
   if(!gotSettings){ fillSettings(d.s); gotSettings = true; }
 }
 
@@ -235,32 +319,29 @@ function connect(){
   const user = $('c_user').value.trim(), pass = $('c_pass').value;
   topic = $('c_topic').value.trim() || 'gestura';
   if(!host){ toast('Enter the broker host'); return }
-  try{ localStorage.setItem('gg', JSON.stringify({host,port,user,pass,topic})) }catch(e){}
+  try{ localStorage.setItem('gestura', JSON.stringify({host,port,user,pass,topic})) }catch(e){}
 
-  pill('pCloud','warn','Connecting...');
-  client = mqtt.connect(`wss://${host}:${port}/mqtt`, {username:user, password:pass, clean:true, reconnectPeriod:3000});
+  client = mqtt.connect(`wss://${host}:${port}/mqtt`,
+    {username:user, password:pass, clean:true, reconnectPeriod:3000});
   client.on('connect', ()=>{
     $('login').classList.add('hidden');
     $('app').classList.remove('hidden');
-    pill('pCloud','on','Cloud connected');
+    light('sCloud','on','Cloud');
     client.subscribe(topic+'/telemetry');
-    client.subscribe(topic+'/status');
   });
-  client.on('message',(t,m)=>{
-    if(t.endsWith('/status')) return;
-    try{ draw(JSON.parse(m.toString())) }catch(e){}
-  });
-  client.on('error', e=>{ pill('pCloud','bad','Cloud error: '+e.message) });
-  client.on('close', ()=>pill('pCloud','bad','Cloud disconnected'));
+  client.on('message',(t,m)=>{ try{ draw(JSON.parse(m.toString())) }catch(e){} });
+  client.on('error', e=>{ toast(e.message); light('sCloud','warn','Cloud') });
+  client.on('close', ()=>light('sCloud','','Cloud'));
 }
 
 setInterval(()=>{
-  const alive = Date.now() - lastSeen < 2500;
-  pill('pGlove', alive?'on':'bad', alive?'Glove online':'Glove offline');
-}, 1000);
+  const live = Date.now() - lastSeen < 2500;
+  light('sGlove', live?'on':'', 'Glove');
+  if(!live) light('sBle','','Bluetooth');
+}, 800);
 
 try{
-  const saved = JSON.parse(localStorage.getItem('gg')||'{}');
+  const saved = JSON.parse(localStorage.getItem('gestura')||'{}');
   ['host','port','user','pass','topic'].forEach(k=>{ if(saved[k]) $('c_'+k).value = saved[k] });
   if(saved.host && saved.user) connect();
 }catch(e){}
