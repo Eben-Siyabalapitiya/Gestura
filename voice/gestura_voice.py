@@ -21,6 +21,7 @@ Say things like:
     "turn around"                     "mine this block"
 """
 
+import ctypes
 import json
 import os
 import queue
@@ -44,7 +45,11 @@ SILENCE_LEVEL = 0.010     # below this counts as quiet
 SILENCE_STOP = 1.2        # quiet for this long after you let go = done
 MIN_SECONDS = 0.6         # ignore accidental taps
 MAX_SECONDS = 10
-MODEL = "gemini-3.6-flash"
+# lite first: it's quick and has a far bigger free daily allowance. The others
+# are fallbacks for when one runs out of quota.
+MODELS = ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-3.6-flash"]
+MODEL = MODELS[0]
+PX_PER_DEGREE = 8         # mouse pixels per degree of view; tune to your game
 F13_VK = 0x7C             # Windows virtual key code for F13
 
 
@@ -60,27 +65,47 @@ ALLOWED_KEYS = ["w", "a", "s", "d", "space", "shift", "ctrl", "e", "q", "esc",
                 "1", "2", "3", "4", "5", "6", "7", "8", "9", "f5"]
 ALLOWED_CLICKS = ["left", "right"]
 
-PROMPT = f"""You control a Minecraft player through keyboard and mouse.
-Listen to the audio and reply with ONLY a JSON object, no markdown, like:
+PROMPT = f"""You control a Minecraft player's keyboard and mouse. The player
+talks to you casually, in whatever words they like. Work out what they meant
+and reply with ONLY a JSON object, no markdown:
 
-{{"say": "walking forward", "tap": ["space"], "hold": ["w"], "click": null,
-  "hold_seconds": 0, "stop": false}}
+{{"say": "walking forward", "tap": [], "hold": ["w"], "release": [],
+  "click": null, "hold_seconds": 0, "turn": 0, "pitch": 0, "stop": false}}
 
 Fields:
-- say: a very short confirmation (max 5 words), e.g. "walking forward"
-- tap: keys to press once. Allowed: {ALLOWED_KEYS}
-- hold: keys to hold down until told to stop. Same list.
-- click: "left", "right" or null. Left click = attack/mine, right = use/place.
-- hold_seconds: if they asked for a set time ("forward for 3 seconds"), put the
-  number here. 0 means hold until they say stop.
-- stop: true if they asked to stop, halt, freeze or cancel.
+- say: a short confirmation, max 5 words
+- tap: keys pressed once. Allowed: {ALLOWED_KEYS}
+- hold: keys held down until told otherwise. Same list.
+- release: keys to let go of, for things like "stop walking" (which releases w)
+- click: "left" (attack/mine), "right" (use/place) or null
+- hold_seconds: how long to hold, when they gave a time like "for 3 seconds"
+  or a short instruction like "walk a bit". 0 means hold until told to stop.
+- turn: degrees to turn the view. Positive is right, negative is left.
+  "turn around" is 180, "look left" is about -90, "a little right" is 30.
+- pitch: degrees to look up (positive) or down (negative)
+- stop: true only if they want EVERYTHING to stop
 
-Examples:
-"jump" -> {{"say":"jumping","tap":["space"],"hold":[],"click":null,"hold_seconds":0,"stop":false}}
-"walk forward until I say stop" -> {{"say":"walking forward","tap":[],"hold":["w"],"click":null,"hold_seconds":0,"stop":false}}
-"mine this block" -> {{"say":"mining","tap":[],"hold":[],"click":"left","hold_seconds":3,"stop":false}}
-"stop" -> {{"say":"stopped","tap":[],"hold":[],"click":null,"hold_seconds":0,"stop":true}}
-If you cannot make out the words, reply with everything empty and stop false.
+Movement keys: w forward, s back, a left, d right, space jump, shift sneak,
+ctrl sprint, e inventory, q drop, 1-9 hotbar slots, f5 camera view.
+
+Understand natural speech, not fixed phrases. Some examples:
+"jump" -> tap space
+"jump twice" -> tap space, say "jumping twice" (use tap ["space","space"])
+"go forward for three seconds" -> hold w, hold_seconds 3
+"walk a bit" -> hold w, hold_seconds 1
+"run forward" -> hold w and ctrl
+"stop walking" -> release ["w"], say "stopped walking"
+"quit moving" / "freeze" -> stop true
+"turn around" -> turn 180
+"look behind me and mine" -> turn 180, click left, hold_seconds 2
+"back up slowly" -> hold s, hold_seconds 2
+"put a block down" -> click right
+"open my inventory" -> tap e
+"switch to slot 3" -> tap 3
+"crouch" -> hold shift
+"stand up" -> release ["shift"]
+If you genuinely cannot make out the words, reply with everything empty,
+say "" and stop false.
 """
 
 held_keys = set()
@@ -101,11 +126,34 @@ def release_all():
         held_click = None
 
 
+def turn_view(degrees, vertical=False):
+    """Turn the camera by moving the mouse, in small steps so the game keeps up."""
+    if not degrees:
+        return
+    total = int(degrees * PX_PER_DEGREE)
+    steps = max(1, min(40, abs(total) // 20))
+    per = total // steps
+    for _ in range(steps):
+        if vertical:
+            ctypes.windll.user32.mouse_event(0x0001, 0, per, 0, 0)
+        else:
+            ctypes.windll.user32.mouse_event(0x0001, per, 0, 0, 0)
+        time.sleep(0.01)
+
+
 def do_action(a):
     global held_click
     if a.get("stop"):
         release_all()
         return
+
+    for k in a.get("release") or []:
+        if k in held_keys:
+            pydirectinput.keyUp(k)
+            held_keys.discard(k)
+
+    turn_view(float(a.get("turn") or 0))
+    turn_view(-float(a.get("pitch") or 0), vertical=True)
 
     for k in a.get("tap") or []:
         if k in ALLOWED_KEYS:
@@ -259,14 +307,24 @@ def wav_bytes(pcm):
 
 # ---------- gemini ----------
 def ask_gemini(pcm):
-    reply = client.models.generate_content(
-        model=MODEL,
-        contents=[PROMPT, types.Part.from_bytes(data=wav_bytes(pcm),
-                                                mime_type="audio/wav")],
-        config=types.GenerateContentConfig(response_mime_type="application/json",
-                                           temperature=0),
-    )
-    return json.loads(reply.text)
+    audio = types.Part.from_bytes(data=wav_bytes(pcm), mime_type="audio/wav")
+    last = None
+    for model in MODELS:
+        try:
+            reply = client.models.generate_content(
+                model=model,
+                contents=[PROMPT, audio],
+                config=types.GenerateContentConfig(
+                    response_mime_type="application/json", temperature=0),
+            )
+            return json.loads(reply.text)
+        except Exception as e:
+            last = e
+            if "RESOURCE_EXHAUSTED" in str(e) or "429" in str(e):
+                print(f"  {model} out of quota, trying another model")
+                continue
+            raise
+    raise last
 
 
 def handle_voice():

@@ -2,8 +2,8 @@
 //
 // Hand 1 (gyro 0x68, "mouse hand"): turn hand = mouse, swing down = click
 // Hand 2 (gyro 0x69, "move hand"):  tilt = W/A/S/D, quick drop = jump
-// Touch 1 = hold for left click (hold 3 s to talk to the AI instead),
-// Touch 2 = hold for right click,
+// Touch 1 = hold for left click,
+// Touch 2 = hold for right click (hold 3 s to talk to the AI instead),
 // hold Touch 1 + 2 together = talk to the AI (holds F13 while held), Touch 3 = next slot
 // Board buttons: A = zero both hands, B = hold F13 (voice push-to-talk),
 //                C = swap left/right click, D = pause
@@ -405,9 +405,9 @@ void controlStep(float dt) {
   }
   if (touchChanged) Serial.printf("GG:T:%d%d%d\n", touch[0], touch[1], touch[2]);
 
-  // voice: hold the left-click pad on its own for VOICE_HOLD_MS, or hold both
+  // voice: hold the right-click pad on its own for VOICE_HOLD_MS, or hold both
   // pads together briefly. Either way the glove holds F13 down while you talk.
-  if (touch[0] && !comboFired && now - touchDownAt[0] >= VOICE_HOLD_MS) comboFired = true;
+  if (touch[1] && !comboFired && now - touchDownAt[1] >= VOICE_HOLD_MS) comboFired = true;
   if (touch[0] && touch[1]) {
     comboUsed = true;
     uint32_t since = max(touchDownAt[0], touchDownAt[1]);
