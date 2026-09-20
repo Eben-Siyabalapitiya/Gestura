@@ -89,7 +89,7 @@ input[type=text],input[type=password]{background:#11141a;color:var(--text);borde
     <div class="bar">Z<div class="t"><i id="bz0"></i></div></div>
     <div class="keys">
       <span class="key" id="kl">L CLICK</span><span class="key" id="kr">R CLICK</span>
-      <span class="key" id="t0">NEXT</span><span class="key" id="t1">PREV</span><span class="key" id="t2">TAP 3</span>
+      <span class="key" id="t0">TOUCH L</span><span class="key" id="t1">TOUCH R</span><span class="key" id="t2">TAP 3</span>
     </div>
     <div class="row"><button onclick="zero(0)">Zero mouse hand</button></div>
   </div>

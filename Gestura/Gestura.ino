@@ -2,8 +2,8 @@
 //
 // Hand 1 (gyro 0x68, "mouse hand"): turn hand = mouse, swing down = click
 // Hand 2 (gyro 0x69, "move hand"):  tilt = W/A/S/D, quick drop = jump
-// Touch 1 tap = next hotbar slot, Touch 2 tap = previous slot,
-// hold Touch 1 + 2 together for 3 s = start voice (taps F13), Touch 3 = hold other click
+// Touch 1 = hold for left click, Touch 2 = hold for right click,
+// hold Touch 1 + 2 together for 3 s = start voice (taps F13), Touch 3 = next hotbar slot
 // Board buttons: A = zero both hands, B = hold F13 (voice push-to-talk),
 //                C = swap left/right click, D = pause
 //
@@ -409,8 +409,7 @@ void controlStep(float dt) {
 
   // quick taps (on release, and not part of the combo) move the hotbar
   if (!wasCombo) {
-    if (tRelease[0] && now - touchDownAt[0] < TAP_MS) wheelPending -= 1;  // next slot
-    if (tRelease[1] && now - touchDownAt[1] < TAP_MS) wheelPending += 1;  // previous slot
+    if (tRelease[2] && now - touchDownAt[2] < TAP_MS) wheelPending -= 1;  // next slot
   }
 
   // ----- hand 1: mouse + swing click -----
@@ -458,11 +457,16 @@ void controlStep(float dt) {
       }
     }
   }
+  // touch 1 = left click, touch 2 = right click, both together = voice combo
+  // (no clicks while the combo is being held)
   uint8_t swingBit = S.clickRight ? 2 : 1;
-  uint8_t holdBit  = S.clickRight ? 1 : 2;
   mouseBtns = 0;
   if (now < swingUntil) mouseBtns |= swingBit;
-  if (touch[2]) mouseBtns |= holdBit;
+  if (!(touch[0] && touch[1])) {
+    if (touch[0]) mouseBtns |= 1;   // left
+    if (touch[1]) mouseBtns |= 2;   // right
+  }
+  if (touch[2]) mouseBtns |= 2;     // optional third pad = right click
 
   int dx = constrain((int)accX, -127, 127);
   int dy = constrain((int)accY, -127, 127);
