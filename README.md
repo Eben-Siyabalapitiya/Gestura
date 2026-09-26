@@ -1,4 +1,4 @@
-# Gestura — Hack the North 2026
+# Gestura Hack the North 2026
 
 **Live dashboard:** https://eben-siyabalapitiya.github.io/Gestura/
 
